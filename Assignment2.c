@@ -6,24 +6,36 @@
 #include <unistd.h>
 
 struct process{
-	pthread_t pid;
+	pthread_t tid;
 	int arrival_time;
 	int cpu_time;
 	int waiting_time;
 	struct process *next;
+	char name;
 };
 
 pthread_t test;
 struct process *p1, *p2, *p3, *p4, *p5;
 struct process *head;
+struct process *curr;
 int i = 0;
 
-void* running(void* data){	
+void* running(){	
 	i++;
-	/*
-	for(curr; curr != NULL; curr = curr->next){
-		printf("test");
-	}*/
+	while(1){
+		if(curr != NULL && curr->tid == pthread_self()){
+			printf("%lu\n", pthread_self());
+			fflush(stdout);
+			printf("Thread is running (Sleeping).\n");
+			fflush(stdout);
+			sleep(curr->cpu_time/1000);
+			printf("Thread is done running.\n");
+			fflush(stdout);
+			curr = curr->next;
+			//pthread_cancel(pthread_self());
+			return NULL;
+		}
+	}
 }
 
 int main(){
@@ -40,11 +52,11 @@ int main(){
 	p4->arrival_time = 13000;
 	p5->arrival_time = 17000;
 
-	p1->cpu_time = 22000;
-	p2->cpu_time = 11000;
-	p3->cpu_time = 12000;
-	p4->cpu_time = 11000;
-	p5->cpu_time = 14000;
+	p1->cpu_time = 1000;
+	p2->cpu_time = 1000;
+	p3->cpu_time = 1000;
+	p4->cpu_time = 1000;
+	p5->cpu_time = 1000;
 
 	head->next = p1;
 	p1->next = p2;
@@ -53,22 +65,30 @@ int main(){
 	p4->next = p5;
 	p5->next = NULL;
 
-	struct process *curr;
 	curr = head;
 	curr = curr->next;
 
-	pthread_create(&p1->pid, NULL, (void*)running, curr);
-	pthread_create(&p2->pid, NULL, (void*)running, curr);
-	pthread_create(&p3->pid, NULL, (void*)running, curr);
-	pthread_create(&p4->pid, NULL, (void*)running, curr);
-	pthread_create(&p5->pid, NULL, (void*)running, curr);
-
 	sleep(1);
-	printf("%i\n", i);
+
+	pthread_create(&p1->tid, NULL, (void*)running, NULL);
+	pthread_create(&p2->tid, NULL, (void*)running, NULL);
+	pthread_create(&p3->tid, NULL, (void*)running, NULL);
+	pthread_create(&p4->tid, NULL, (void*)running, NULL);
+	pthread_create(&p5->tid, NULL, (void*)running, NULL);
+
+	pthread_join(p1->tid, NULL);
+	pthread_join(p2->tid, NULL);
+	pthread_join(p3->tid, NULL);
+	pthread_join(p4->tid, NULL);
+	pthread_join(p5->tid, NULL);
 	free(head);
 	free(p1);
 	free(p2);
 	free(p3);
 	free(p4);
 	free(p5);
+
+	printf("All threads finished executing. Exiting main thread . . .\n");
+	fflush(stdout);
+	exit(0);
 }
