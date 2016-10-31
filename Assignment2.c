@@ -18,21 +18,19 @@ pthread_t test;
 struct process *p1, *p2, *p3, *p4, *p5;
 struct process *head;
 struct process *curr;
-int i = 0;
 
 void* running(){	
-	i++;
 	while(1){
 		if(curr != NULL && curr->tid == pthread_self()){
 			printf("%lu\n", pthread_self());
+			printf("Thread executing at %f\n", (double)clock()/CLOCKS_PER_SEC);
 			fflush(stdout);
 			printf("Thread is running (Sleeping).\n");
 			fflush(stdout);
 			sleep(curr->cpu_time/1000);
-			printf("Thread is done running.\n");
+			printf("Thread is done running.\n\n");
 			fflush(stdout);
 			curr = curr->next;
-			//pthread_cancel(pthread_self());
 			return NULL;
 		}
 	}
@@ -88,7 +86,12 @@ int main(){
 	free(p4);
 	free(p5);
 
-	printf("All threads finished executing. Exiting main thread . . .\n");
+	printf("All threads finished executing.\n\n");
 	fflush(stdout);
+
+	printf("---------\n");
+	printf("|Summary|\n");
+	printf("---------\n");
+	printf("Total run time: %f seconds\n", (double)clock()/CLOCKS_PER_SEC);
 	exit(0);
 }
