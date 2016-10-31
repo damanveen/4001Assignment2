@@ -1,17 +1,30 @@
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <pthread.h>
+#include <unistd.h>
 
 struct process{
-	int pid;
+	pthread_t pid;
 	int arrival_time;
 	int cpu_time;
 	int waiting_time;
 	struct process *next;
 };
 
+pthread_t test;
 struct process *p1, *p2, *p3, *p4, *p5;
 struct process *head;
+int i = 0;
+
+void* running(void* data){	
+	i++;
+	/*
+	for(curr; curr != NULL; curr = curr->next){
+		printf("test");
+	}*/
+}
 
 int main(){
 	struct process *head = (struct process*) malloc(sizeof(struct process));
@@ -20,11 +33,6 @@ int main(){
 	struct process *p3 = (struct process*) malloc(sizeof(struct process));
 	struct process *p4 = (struct process*) malloc(sizeof(struct process));
 	struct process *p5 = (struct process*) malloc(sizeof(struct process));
-	p1->pid = 1;
-	p2->pid = 2;
-	p3->pid = 3;
-	p4->pid = 4;
-	p5->pid = 5;
 
 	p1->arrival_time = 0;
 	p2->arrival_time = 9000;
@@ -49,7 +57,18 @@ int main(){
 	curr = head;
 	curr = curr->next;
 
-	for(curr; curr != NULL; curr = curr->next){
-		printf("%i\n",curr->pid);
-	}
+	pthread_create(&p1->pid, NULL, (void*)running, curr);
+	pthread_create(&p2->pid, NULL, (void*)running, curr);
+	pthread_create(&p3->pid, NULL, (void*)running, curr);
+	pthread_create(&p4->pid, NULL, (void*)running, curr);
+	pthread_create(&p5->pid, NULL, (void*)running, curr);
+
+	sleep(1);
+	printf("%i\n", i);
+	free(head);
+	free(p1);
+	free(p2);
+	free(p3);
+	free(p4);
+	free(p5);
 }
