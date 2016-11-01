@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <string.h>
 
 struct process{
 	pthread_t tid;
@@ -11,33 +12,40 @@ struct process{
 	int cpu_time;
 	int waiting_time;
 	struct process *next;
-	char name;
 };
 
-pthread_t test;
 struct process *p1, *p2, *p3, *p4, *p5;
-struct process *head;
 struct process *curr;
 
 void* running(){	
 	while(1){
 		if(curr != NULL && curr->tid == pthread_self()){
 			printf("%lu\n", pthread_self());
-			printf("Thread executing at %f\n", (double)clock()/CLOCKS_PER_SEC);
-			fflush(stdout);
+			printf("Thread executing at %f\n", ((double)clock())/CLOCKS_PER_SEC);
 			printf("Thread is running (Sleeping).\n");
-			fflush(stdout);
 			sleep(curr->cpu_time/1000);
 			printf("Thread is done running.\n\n");
-			fflush(stdout);
 			curr = curr->next;
 			return NULL;
 		}
 	}
 }
+ 
 
 int main(){
-	struct process *head = (struct process*) malloc(sizeof(struct process));
+	char *token, s[2] = ",";
+    FILE *file = fopen("test.txt", "r");
+    char line[256];
+    while (fgets(line, sizeof(line), file)) {
+    	printf("%s", line);
+        strtok(line,s);
+        while(token != NULL){
+        	printf("%s\n", token);
+        	token = strtok(NULL,s);
+        }
+    }
+    fclose(file);
+
 	struct process *p1 = (struct process*) malloc(sizeof(struct process));
 	struct process *p2 = (struct process*) malloc(sizeof(struct process));
 	struct process *p3 = (struct process*) malloc(sizeof(struct process));
@@ -50,21 +58,19 @@ int main(){
 	p4->arrival_time = 13000;
 	p5->arrival_time = 17000;
 
-	p1->cpu_time = 1000;
-	p2->cpu_time = 1000;
-	p3->cpu_time = 1000;
-	p4->cpu_time = 1000;
-	p5->cpu_time = 1000;
+	p1->cpu_time = 22000;
+	p2->cpu_time = 11000;
+	p3->cpu_time = 12000;
+	p4->cpu_time = 11000;
+	p5->cpu_time = 14000;
 
-	head->next = p1;
 	p1->next = p2;
 	p2->next = p3;
 	p3->next = p4;
 	p4->next = p5;
 	p5->next = NULL;
 
-	curr = head;
-	curr = curr->next;
+	curr = p1;
 
 	sleep(1);
 
@@ -79,14 +85,13 @@ int main(){
 	pthread_join(p3->tid, NULL);
 	pthread_join(p4->tid, NULL);
 	pthread_join(p5->tid, NULL);
-	free(head);
 	free(p1);
 	free(p2);
 	free(p3);
 	free(p4);
 	free(p5);
 
-	printf("All threads finished executing.\n\n");
+	printf("All` threads finished executing.\n\n");
 	fflush(stdout);
 
 	printf("---------\n");
