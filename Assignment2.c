@@ -22,6 +22,7 @@ struct process *head;
 struct process *curr;
 int totalProcesses = 0;
 int totalTurnaroundTime = 0;
+int waitTime = 0;
 
 
 void sec_wait(int sec){
@@ -40,22 +41,28 @@ void* running(){
 			printf("Thread executing at %f\n", ((double)clock()/CLOCKS_PER_SEC));
 			
 			printf("Thread is running (Sleeping).\n");
-		
 	
 
 			sec_wait(curr->cpu_time/1000);
+
+
 			printf("Thread is done running.\n\n");
 		
 
 			curr->turnaround_time = (((double)clock()/CLOCKS_PER_SEC)) - (curr->arrival_time/1000);
 			totalTurnaroundTime = totalTurnaroundTime + curr->turnaround_time;
 		
-			printf("Thread turnaround time is: %d\n\n", curr->turnaround_time);
+			printf("Thread turnaround time is: %d\n", curr->turnaround_time);
+			printf("Thread waittime is: %d\n\n", waitTime);
+
+			waitTime = waitTime + (curr->cpu_time/1000);
 			totalProcesses++;
 			curr = curr->next;
 			return NULL;
 		}
 	}
+
+
 }
 
 int main(){
