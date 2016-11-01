@@ -10,6 +10,8 @@ struct process{
 	int arrival_time;
 	int cpu_time;
 	int waiting_time;
+	int finish_time;
+	int turnaround_time;
 	struct process *next;
 	char name;
 };
@@ -18,18 +20,38 @@ pthread_t test;
 struct process *p1, *p2, *p3, *p4, *p5;
 struct process *head;
 struct process *curr;
+int totalProcesses = 0;
+int totalTurnaroundTime = 0;
+
+
+void sec_wait(int sec){
+
+	clock_t wait_till_end;
+
+	wait_till_end = clock() + sec * CLOCKS_PER_SEC; 
+
+	while(clock() < wait_till_end){}
+}
 
 void* running(){	
 	while(1){
 		if(curr != NULL && curr->tid == pthread_self()){
 			printf("%lu\n", pthread_self());
-			printf("Thread executing at %f\n", (double)clock()/CLOCKS_PER_SEC);
-			fflush(stdout);
+			printf("Thread executing at %f\n", ((double)clock()/CLOCKS_PER_SEC));
+			
 			printf("Thread is running (Sleeping).\n");
-			fflush(stdout);
-			sleep(curr->cpu_time/1000);
+		
+	
+
+			sec_wait(curr->cpu_time/1000);
 			printf("Thread is done running.\n\n");
-			fflush(stdout);
+		
+
+			curr->turnaround_time = (((double)clock()/CLOCKS_PER_SEC)) - (curr->arrival_time/1000);
+			totalTurnaroundTime = totalTurnaroundTime + curr->turnaround_time;
+		
+			printf("Thread turnaround time is: %d\n\n", curr->turnaround_time);
+			totalProcesses++;
 			curr = curr->next;
 			return NULL;
 		}
@@ -50,11 +72,11 @@ int main(){
 	p4->arrival_time = 13000;
 	p5->arrival_time = 17000;
 
-	p1->cpu_time = 1000;
-	p2->cpu_time = 1000;
-	p3->cpu_time = 1000;
-	p4->cpu_time = 1000;
-	p5->cpu_time = 1000;
+	p1->cpu_time = 22000;
+	p2->cpu_time = 11000;
+	p3->cpu_time = 12000;
+	p4->cpu_time = 11000;
+	p5->cpu_time = 14000;
 
 	head->next = p1;
 	p1->next = p2;
@@ -93,5 +115,9 @@ int main(){
 	printf("|Summary|\n");
 	printf("---------\n");
 	printf("Total run time: %f seconds\n", (double)clock()/CLOCKS_PER_SEC);
+	printf("Average turnaround time: %d seconds\n", (totalTurnaroundTime/totalProcesses));
+	printf("Throughput: %f   5 Processes/second\n", (totalProcesses/((double)clock()/CLOCKS_PER_SEC)));
 	exit(0);
 }
+
+
