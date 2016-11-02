@@ -70,6 +70,7 @@ int main(){
 	}
 	fclose(file);
 	for(int i = 0; i < number; i++){
+		//Add method of changing pointer slower
 		printf("Creating thread. . . \n");
 		*arg = i;
 		pthread_create(&ListProcess[i].tid, NULL, (void*)running, arg);
