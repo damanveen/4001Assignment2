@@ -6,16 +6,16 @@
 #include <unistd.h>
 #include <string.h>
 
-struct process{
+typedef struct processStruct{
 	pthread_t tid;
 	int arrival_time;
 	int cpu_time;
 	struct process *next;
-};
+}process;
 
-struct process *p1, *p2, *p3, *p4, *p5;
-struct process *curr;
-struct proccess *ListProcess;
+process *p1, *p2, *p3, *p4, *p5;
+process *curr;
+process *ListProcess;
 FILE *file;
 
  
@@ -31,6 +31,7 @@ int getNumEntries(){
 
 void* running(void *i){
 	int a = *((int*) i);
+	printf("Index value %i\n", a);
 	while(1){/*
 		if(curr != NULL && curr->tid == pthread_self()){
 			printf("%lu\n", pthread_self());
@@ -41,9 +42,10 @@ void* running(void *i){
 			curr = curr->next;
 			return NULL;
 		}*/
-		printf("%i", ListProcess[a].arrival_time);
 		if(ListProcess[a].arrival_time < ((double)clock())/CLOCKS_PER_SEC){
-			printf("hi");
+			printf("%i\n", ListProcess[a].arrival_time);
+			sleep(2);
+			fflush(stdout);
 		}
 	}
 }
@@ -54,7 +56,7 @@ int main(){
 	int number = getNumEntries();
 	int pos = 0;
 	int *arg;
-    struct process *ListProcess = malloc(sizeof(struct process)*number);
+    ListProcess = malloc(sizeof(process)*number);
     arg = malloc(sizeof(*arg));
    	file = fopen("test.txt", "r");
 	while (fgets(line, sizeof(line), file)) {
@@ -67,11 +69,10 @@ int main(){
 	    pos++;
 	}
 	fclose(file);
-	printf("%i", ListProcess[0].arrival_time);
 	for(int i = 0; i < number; i++){
+		printf("Creating thread. . . \n");
 		*arg = i;
 		pthread_create(&ListProcess[i].tid, NULL, (void*)running, arg);
-		printf("Creating thread. . . \n");
 	}
     
 	for(int i = 0; i < number; i++){
