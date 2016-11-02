@@ -6,18 +6,26 @@
 #include <unistd.h>
 #include <string.h>
 
-typedef struct processStruct{
-	pthread_t tid;
-	int arrival_time;
-	int cpu_time;
-	struct process *next;
-}process;
+typedef struct process process;
 
-process *p1, *p2, *p3, *p4, *p5;
 process *curr;
 process *ListProcess;
 FILE *file;
 
+
+struct process{
+	pthread_t tid;
+	int arrival_time;
+	int cpu_time;
+	int added;
+	process *next;
+};
+
+void sec_wait(int sec){
+	clock_t wait_till_end;
+	wait_till_end = clock() + sec * CLOCKS_PER_SEC; 
+	while(clock() < wait_till_end){}
+}
  
 int getNumEntries(){
 	int numProcess = 0;	
@@ -32,7 +40,21 @@ int getNumEntries(){
 void* running(void *i){
 	int a = *((int*) i);
 	printf("Index value %i\n", a);
-	while(1){/*
+	process *NewItem = malloc(sizeof(process));
+	while(1){
+		if(ListProcess[a].arrival_time < ((double)clock())/CLOCKS_PER_SEC){
+			NewItem->tid = pthread_self();
+			NewItem->arrival_time = ListProcess[a].arrival_time;
+			NewItem->cpu_time = ListProcess[a].cpu_time;
+			NewItem->next = NULL;
+			if(curr == NULL){
+				curr = NewItem;
+			}
+			else{
+				curr->next = NewItem;	
+			}
+		}
+
 		if(curr != NULL && curr->tid == pthread_self()){
 			printf("%lu\n", pthread_self());
 			printf("Thread executing at %f\n", ((double)clock())/CLOCKS_PER_SEC);
@@ -41,11 +63,6 @@ void* running(void *i){
 			printf("Thread is done running.\n\n");
 			curr = curr->next;
 			return NULL;
-		}*/
-		if(ListProcess[a].arrival_time < ((double)clock())/CLOCKS_PER_SEC){
-			printf("%i\n", ListProcess[a].arrival_time);
-			sleep(2);
-			fflush(stdout);
 		}
 	}
 }
@@ -74,6 +91,7 @@ int main(){
 		printf("Creating thread. . . \n");
 		*arg = i;
 		pthread_create(&ListProcess[i].tid, NULL, (void*)running, arg);
+		sleep(1);
 	}
     
 	for(int i = 0; i < number; i++){
