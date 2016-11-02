@@ -10,77 +10,77 @@ struct process{
 	pthread_t tid;
 	int arrival_time;
 	int cpu_time;
-	int waiting_time;
 	struct process *next;
-	int finish_time;
-	int turnaround_time;
-	
 };
-
-
 
 struct process *p1, *p2, *p3, *p4, *p5;
 struct process *curr;
-int totalProcesses = 0;
-int totalTurnaroundTime = 0;
-int waitTime = 0;
+struct proccess *ListProcess;
+FILE *file;
 
-void sec_wait(int sec){
-
-	clock_t wait_till_end;
-
-	wait_till_end = clock() + sec * CLOCKS_PER_SEC; 
-
-	while(clock() < wait_till_end){}
+ 
+int getNumEntries(){
+	int numProcess = 0;	
+	file = fopen("test.txt", "r");
+    char line[256];
+    while (fgets(line, sizeof(line), file)) {
+        numProcess++;
+    }
+    return numProcess;
 }
 
-void* running(){	
-	while(1){
+void* running(void *i){
+	int a = *((int*) i);
+	while(1){/*
 		if(curr != NULL && curr->tid == pthread_self()){
 			printf("%lu\n", pthread_self());
-			printf("Thread executing at %f\n", ((double)clock()/CLOCKS_PER_SEC));
-			
+			printf("Thread executing at %f\n", ((double)clock())/CLOCKS_PER_SEC);
 			printf("Thread is running (Sleeping).\n");
-			
-			sec_wait(curr->cpu_time/1000);
-
-
-
-			
-
-
+			sleep(curr->cpu_time/1000);
 			printf("Thread is done running.\n\n");
-		
-
-			curr->turnaround_time = (((double)clock()/CLOCKS_PER_SEC)) - (curr->arrival_time/1000);
-			totalTurnaroundTime = totalTurnaroundTime + curr->turnaround_time;
-		
-			printf("Thread turnaround time is: %d\n", curr->turnaround_time);
-			printf("Thread waittime is: %d\n\n", waitTime);
-
-			waitTime = waitTime + (curr->cpu_time/1000);
-			totalProcesses++;
 			curr = curr->next;
 			return NULL;
+		}*/
+		printf("%i", ListProcess[a].arrival_time);
+		if(ListProcess[a].arrival_time < ((double)clock())/CLOCKS_PER_SEC){
+			printf("hi");
 		}
 	}
 }
- 
 
 int main(){
+	char line[256];
 	char *token, s[2] = ",";
-    FILE *file = fopen("test.txt", "r");
-    char line[256];
-    while (fgets(line, sizeof(line), file)) {
-    	printf("%s", line);
-        strtok(line,s);
-        while(token != NULL){
-        	printf("%s\n", token);
-        	token = strtok(NULL,s);
-        }
-    }
-    fclose(file);
+	int number = getNumEntries();
+	int pos = 0;
+	int *arg;
+    struct process *ListProcess = malloc(sizeof(struct process)*number);
+    arg = malloc(sizeof(*arg));
+   	file = fopen("test.txt", "r");
+	while (fgets(line, sizeof(line), file)) {
+	    token = strtok(line,s);
+	    ListProcess[pos].arrival_time = atoi(token);
+	    while(token != NULL){
+	    	ListProcess[pos].cpu_time = atoi(token);
+	    	token = strtok(NULL,s);
+	    }
+	    pos++;
+	}
+	fclose(file);
+	printf("%i", ListProcess[0].arrival_time);
+	for(int i = 0; i < number; i++){
+		*arg = i;
+		pthread_create(&ListProcess[i].tid, NULL, (void*)running, arg);
+		printf("Creating thread. . . \n");
+	}
+    
+	for(int i = 0; i < number; i++){
+		pthread_join(ListProcess[i].tid,NULL);
+	}
+    
 
+
+    /*
 	struct process *p1 = (struct process*) malloc(sizeof(struct process));
 	struct process *p2 = (struct process*) malloc(sizeof(struct process));
 	struct process *p3 = (struct process*) malloc(sizeof(struct process));
@@ -133,8 +133,5 @@ int main(){
 	printf("|Summary|\n");
 	printf("---------\n");
 	printf("Total run time: %f seconds\n", (double)clock()/CLOCKS_PER_SEC);
-	printf("Average turnaround time: %d seconds\n", (totalTurnaroundTime/totalProcesses));
-	printf("Average wait time: %d seconds\n", (waitTime/totalProcesses));
-	printf("Throughput: %f   5 Processes/second\n", (totalProcesses/((double)clock()/CLOCKS_PER_SEC)));
-	exit(0);
+	exit(0);*/
 }
