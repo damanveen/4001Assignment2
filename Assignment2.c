@@ -4,52 +4,82 @@
 #include <sys/types.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <string.h>
+
+typedef struct process process;
+
+process *curr;
+process *ListProcess;
+FILE *file;
+
+int i;
+int totalProcesses = 0;
+int totalTurnaroundTime = 0;
+int waitTime = 0;
+clock_t start_t , end_t;
+
 
 struct process{
 	pthread_t tid;
 	int arrival_time;
 	int cpu_time;
+	int added;
 	int waiting_time;
 	int finish_time;
 	int turnaround_time;
-	struct process *next;
-	char name;
+	process *next;
 };
 
-pthread_t test;
-struct process *p1, *p2, *p3, *p4, *p5;
-struct process *head;
-struct process *curr;
-int totalProcesses = 0;
-int totalTurnaroundTime = 0;
-int waitTime = 0;
-
-
 void sec_wait(int sec){
-
 	clock_t wait_till_end;
-
 	wait_till_end = clock() + sec * CLOCKS_PER_SEC; 
-
 	while(clock() < wait_till_end){}
 }
+ 
+int getNumEntries(){
+	int numProcess = 0;	
+	file = fopen("test.txt", "r");
+    char line[256];
+    while (fgets(line, sizeof(line), file)) {
+        numProcess++;
+    }
+    return numProcess;
+}
 
-void* running(){	
+void* running(void *i){
+	int a = *((int*) i);
+	printf("Index value %i\n", a);
+	process *NewItem = malloc(sizeof(process));
 	while(1){
+		if(ListProcess[a].arrival_time < (double)clock()/CLOCKS_PER_SEC*10000 && ListProcess[a].added == 0){
+			NewItem->tid = pthread_self();
+			NewItem->arrival_time = ListProcess[a].arrival_time;
+			NewItem->cpu_time = ListProcess[a].cpu_time;
+			NewItem->next = NULL;
+
+
+			
+ 			if(curr == NULL){
+				curr = NewItem;
+			}
+			else{
+				curr->next = NewItem;	
+			}
+
+			NewItem->added = 1;
+		}
+
 		if(curr != NULL && curr->tid == pthread_self()){
 			printf("%lu\n", pthread_self());
-			printf("Thread executing at %f\n", ((double)clock()/CLOCKS_PER_SEC));
-			
+			printf("Thread executing at %f\n", ((double)clock())/CLOCKS_PER_SEC);
 			printf("Thread is running (Sleeping).\n");
-	
 
-			sec_wait(curr->cpu_time/1000);
+			sleep(curr->cpu_time/1000);
+			printf("Thread run time: %f, thread arrival time: %f\n", (double)clock(), (double)curr->arrival_time);
+			
+			printf("Thread is done running: %f\n\n", (double)clock()/CLOCKS_PER_SEC);
 
-
-			printf("Thread is done running.\n\n");
-		
-
-			curr->turnaround_time = (((double)clock()/CLOCKS_PER_SEC)) - (curr->arrival_time/1000);
+			curr->turnaround_time = (curr->cpu_time/1000) - (curr->arrival_time/1000);
 			totalTurnaroundTime = totalTurnaroundTime + curr->turnaround_time;
 		
 			printf("Thread turnaround time is: %d\n", curr->turnaround_time);
@@ -57,74 +87,63 @@ void* running(){
 
 			waitTime = waitTime + (curr->cpu_time/1000);
 			totalProcesses++;
+
+
+
 			curr = curr->next;
+
+
 			return NULL;
 		}
 	}
-
-
 }
 
 int main(){
-	struct process *head = (struct process*) malloc(sizeof(struct process));
-	struct process *p1 = (struct process*) malloc(sizeof(struct process));
-	struct process *p2 = (struct process*) malloc(sizeof(struct process));
-	struct process *p3 = (struct process*) malloc(sizeof(struct process));
-	struct process *p4 = (struct process*) malloc(sizeof(struct process));
-	struct process *p5 = (struct process*) malloc(sizeof(struct process));
+	start_t = clock();
+	char line[256];
+	char *token, s[2] = ",";
+	int number = getNumEntries();
+	int pos = 0;
+	int *arg;
+    ListProcess = malloc(sizeof(process)*number);
+    arg = malloc(sizeof(*arg));
+   	file = fopen("test.txt", "r");
+	while (fgets(line, sizeof(line), file)) {
+	    token = strtok(line,s);
+	    ListProcess[pos].arrival_time = atoi(token);
+	    while(token != NULL){
+	    	ListProcess[pos].cpu_time = atoi(token);
+	    	token = strtok(NULL,s);
+	    }
+	    pos++;
+	}
+	fclose(file);
+	
+	for(i = 0; i < number; i++){
+		//Add method of changing pointer slower
+		printf("Creating thread. . . \n");
+		*arg = i;
+		pthread_create(&ListProcess[i].tid, NULL, (void*)running, arg);
+		sleep(1);
+	}
+    
+	for(i = 0; i < number; i++){
+		pthread_join(ListProcess[i].tid,NULL);
+	}
+    
+	//fflush(stdout);
 
-	p1->arrival_time = 0;
-	p2->arrival_time = 9000;
-	p3->arrival_time = 12000;
-	p4->arrival_time = 13000;
-	p5->arrival_time = 17000;
-
-	p1->cpu_time = 22000;
-	p2->cpu_time = 11000;
-	p3->cpu_time = 12000;
-	p4->cpu_time = 11000;
-	p5->cpu_time = 14000;
-
-	head->next = p1;
-	p1->next = p2;
-	p2->next = p3;
-	p3->next = p4;
-	p4->next = p5;
-	p5->next = NULL;
-
-	curr = head;
-	curr = curr->next;
-
-	sleep(1);
-
-	pthread_create(&p1->tid, NULL, (void*)running, NULL);
-	pthread_create(&p2->tid, NULL, (void*)running, NULL);
-	pthread_create(&p3->tid, NULL, (void*)running, NULL);
-	pthread_create(&p4->tid, NULL, (void*)running, NULL);
-	pthread_create(&p5->tid, NULL, (void*)running, NULL);
-
-	pthread_join(p1->tid, NULL);
-	pthread_join(p2->tid, NULL);
-	pthread_join(p3->tid, NULL);
-	pthread_join(p4->tid, NULL);
-	pthread_join(p5->tid, NULL);
-	free(head);
-	free(p1);
-	free(p2);
-	free(p3);
-	free(p4);
-	free(p5);
-
-	printf("All threads finished executing.\n\n");
-	fflush(stdout);
-
+	end_t = clock();
 	printf("---------\n");
 	printf("|Summary|\n");
 	printf("---------\n");
-	printf("Total run time: %f seconds\n", (double)clock()/CLOCKS_PER_SEC);
+
+
+	printf("Total run time: %f seconds\n", (double)end_t/CLOCKS_PER_SEC);
 	printf("Average turnaround time: %d seconds\n", (totalTurnaroundTime/totalProcesses));
+	printf("Average wait time: %d seconds\n", (waitTime/totalProcesses));
 	printf("Throughput: %f   5 Processes/second\n", (totalProcesses/((double)clock()/CLOCKS_PER_SEC)));
 	exit(0);
+
+
 }
-
-
