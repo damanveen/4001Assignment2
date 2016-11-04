@@ -61,13 +61,18 @@ void* running(void *i){
 
 			time_t current_t = time(NULL);
 
-			printf("Thread %d is executing at: %f\n\n", a, difftime(current_t, start_t));
+
+
+			printf("---------\n");
+			printf("|THREAD %d|\n", a);
+			printf("---------\n");
+			printf("Executing at: %f\n",  difftime(current_t, start_t));
 			//printf("Thread is running (Sleeping).\n");
 
 			sleep(curr->cpu_time/1000);
 			current_t = time(NULL);
 
-			printf("Thread %d is done running at: %f\n",a, difftime(current_t, start_t));
+			printf("Finished running at: %f\n", difftime(current_t, start_t));
 
 			curr->turnaround_time = difftime(current_t, start_t) - curr->arrival_time/1000;
 			totalTurnaroundTime = totalTurnaroundTime + curr->turnaround_time;
@@ -75,8 +80,8 @@ void* running(void *i){
 			
 
 
-			printf("Thread %d turnaround time is: %f\n", a, curr->turnaround_time);
-			printf("Thread %d waittime is: %d\n\n", a, waitTime);
+			printf("Turnaround time is: %f\n", curr->turnaround_time);
+			printf("Waittime is: %d\n\n",  waitTime);
 
 			waitTime = waitTime + (curr->cpu_time/1000);
 			totalProcesses++;
@@ -150,6 +155,8 @@ int main(){
 	    pos++;
 	}
 	fclose(file);
+	
+
 	
 	for(i = 0; i < number; i++){
 		//Add method of changing pointer slower
