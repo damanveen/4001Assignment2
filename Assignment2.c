@@ -10,6 +10,7 @@ typedef struct process process;
 
 process *curr;
 process *tail;
+process *IOpointer;
 
 process *ListProcess;
 FILE *file;
@@ -28,6 +29,7 @@ struct process{
 	int arrival_time;
 	int cpu_time;
 	int added;
+	int index;
 	int waiting_time;
 	int finish_time;
 	int io_duration;
@@ -132,7 +134,7 @@ void* running(void *i){
 void* io_running(void *i){
 
 	int a = *((int*) i);
-	
+	//curr->index = a;
 	process *NewItem = malloc(sizeof(process));
 	ListProcess[a].io_frequency = 1000;
 	ListProcess[a].io_duration = 1000;
@@ -157,10 +159,20 @@ void* io_running(void *i){
 				curr->cpu_time-=1000;
 				//tail->next = curr;
 				//curr = curr->next; 
-				
-				if(curr->next != NULL){
 
-					curr = curr->next;
+				if(curr->next == NULL){
+
+					sleep(1);
+
+				}else if(curr->next != NULL){
+					IOpointer = curr->next;
+					
+					if(IOpointer->cpu_time > 0){
+						printf("Thread %d is executing IO for %d second. Remaining CPU:%d\n",IOpointer->index, IOpointer->io_duration/1000, IOpointer->cpu_time);
+						sleep(1);
+						IOpointer->cpu_time-=1000;
+					}
+					
 
 				}
 				
@@ -285,7 +297,7 @@ int main(){
 		printf("Creating thread %i. . . \n\n", i);
 		*arg = i;
 		ListProcess[i].added = 0;
-
+		
 		//ListProcess[i].io_duration = 1000;
 		//ListProcess[i].io_frequency = 1000;
 
