@@ -10,6 +10,7 @@ typedef struct process process;
 
 process *curr;
 process *tail;
+
 process *ListProcess;
 FILE *file;
 
@@ -29,6 +30,8 @@ struct process{
 	int added;
 	int waiting_time;
 	int finish_time;
+	int io_duration;
+	int io_frequency ;
 	double turnaround_time;
 	process *next;
 };
@@ -51,23 +54,22 @@ int getNumEntries(){
 
 void* running(void *i){
 	int a = *((int*) i);
-	//printf("Index value %i\n", a);
+	
 	process *NewItem = malloc(sizeof(process));
 
 	while(1){
 		
 		if(curr != NULL && curr->tid == pthread_self()  && curr->added == 1){
-			//printf("%lu\n", pthread_self());
+			
 
 			time_t current_t = time(NULL);
-
 
 
 			printf("---------\n");
 			printf("|THREAD %d|\n", a);
 			printf("---------\n");
 			printf("Executing at: %f\n",  difftime(current_t, start_t));
-			//printf("Thread is running (Sleeping).\n");
+			
 
 			sleep(curr->cpu_time/1000);
 			current_t = time(NULL);
@@ -96,13 +98,6 @@ void* running(void *i){
 
 		time_t current_t = time(NULL);
 		
-		
-
-		//if(ListProcess[a].arrival_time/1000 == t){
-
-		//	printf("%d, %f\n", ListProcess[a].arrival_time/1000, t);
-
-		//}
 		
 		if(ListProcess[a].arrival_time/1000 == difftime(current_t, start_t) && NewItem->added == 0){
 			
@@ -134,6 +129,131 @@ void* running(void *i){
 	}
 }
 
+void* io_running(void *i){
+
+	int a = *((int*) i);
+	
+	process *NewItem = malloc(sizeof(process));
+	ListProcess[a].io_frequency = 1000;
+	ListProcess[a].io_duration = 1000;
+	int t = 0;
+	while(1){
+		if(curr != NULL && curr->tid == pthread_self()  && curr->added == 1){
+			
+
+			time_t temp_t = time(NULL);
+			
+
+			//printf("---------\n");
+			//printf("|THREAD %d|\n", a);
+			//printf("---------\n");
+			//printf("Executing at: %f\n",  difftime(current_t, start_t));
+			
+
+			while(curr->cpu_time > 0){
+
+				printf("Thread %d is executing IO for %d second. Remaining CPU:%d\n",a, curr->io_duration/1000, curr->cpu_time);
+				sleep(1);
+				curr->cpu_time-=1000;
+				//tail->next = curr;
+				//curr = curr->next; 
+				
+				if(curr->next != NULL){
+
+					curr = curr->next;
+
+				}
+				
+			}
+
+			 if(curr->cpu_time <= 0){
+
+				time_t current_t = time(NULL);
+
+				printf("Finished running at: %f\n", difftime(current_t, start_t));
+
+				curr->turnaround_time = difftime(current_t, start_t) - curr->arrival_time/1000;
+				totalTurnaroundTime = totalTurnaroundTime + curr->turnaround_time;
+		
+			
+
+
+				printf("Turnaround time is: %f\n", curr->turnaround_time);
+				printf("Waittime is: %d\n\n",  waitTime);
+
+				waitTime = waitTime + (curr->cpu_time/1000);
+				totalProcesses++;
+
+				if(curr->next != NULL){
+
+					curr = curr->next;
+
+				}
+
+
+				
+				return NULL;
+			}
+			
+		}
+
+		
+		time_t current_t = time(NULL);
+		
+		
+		if(ListProcess[a].arrival_time/1000 == difftime(current_t, start_t) && NewItem->added == 0){
+			
+
+			NewItem->tid = pthread_self();
+			NewItem->arrival_time = ListProcess[a].arrival_time;
+			NewItem->cpu_time = ListProcess[a].cpu_time;
+			NewItem->next = NULL;
+			NewItem->io_frequency = ListProcess[a].io_frequency;
+
+			
+ 			if(curr == NULL){
+				curr = NewItem;
+				tail = NewItem;
+			}
+			else{
+
+				tail->next = NewItem;
+				tail = tail->next;	
+			}
+
+			printf("%d was added to the ready queue at %f\n\n", a, difftime(current_t, start_t));
+
+
+			NewItem->added = 1;
+		}
+
+		//printf("%i\n", t);
+	}
+
+
+
+
+
+}
+
+void summary(double totalTime){
+
+	printf("---------\n");
+	printf("|Summary|\n");
+	printf("---------\n");
+
+
+	printf("Total run time: %f seconds\n", totalTime);
+	printf("Average turnaround time: %d seconds\n", (totalTurnaroundTime/totalProcesses));
+	printf("Average wait time: %d seconds\n", (waitTime/totalProcesses));
+	printf("Throughput: %f   5 Processes/second\n", totalProcesses/totalTime);
+
+
+
+}
+
+
+
 int main(){
 	start_t = time(NULL);
 
@@ -151,19 +271,25 @@ int main(){
 	    while(token != NULL){
 	    	ListProcess[pos].cpu_time = atoi(token);
 	    	token = strtok(NULL,s);
+	    	
+
 	    }
 	    pos++;
 	}
 	fclose(file);
 	
 
-	
+
 	for(i = 0; i < number; i++){
 		//Add method of changing pointer slower
 		printf("Creating thread %i. . . \n\n", i);
 		*arg = i;
 		ListProcess[i].added = 0;
-		pthread_create(&ListProcess[i].tid, NULL, (void*)running, arg);
+
+		//ListProcess[i].io_duration = 1000;
+		//ListProcess[i].io_frequency = 1000;
+
+		pthread_create(&ListProcess[i].tid, NULL, (void*)io_running, arg);
 		
 		
 		sleep(1);
@@ -174,20 +300,14 @@ int main(){
 		pthread_join(ListProcess[i].tid,NULL);
 	}
     
-	//fflush(stdout);
+	
 
 	end_t = time(NULL);
 
 
-	printf("---------\n");
-	printf("|Summary|\n");
-	printf("---------\n");
+	summary(difftime(end_t, start_t));
 
-
-	printf("Total run time: %f seconds\n", difftime(end_t, start_t));
-	printf("Average turnaround time: %d seconds\n", (totalTurnaroundTime/totalProcesses));
-	printf("Average wait time: %d seconds\n", (waitTime/totalProcesses));
-	printf("Throughput: %f   5 Processes/second\n", totalProcesses/difftime(end_t, start_t));
 	exit(0);
 
 }
+
